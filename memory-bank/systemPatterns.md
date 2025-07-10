@@ -9,9 +9,9 @@ View (SwiftUI) → ViewModel (ObservableObject) → Model (Data)
 
 **Компоненты:**
 - **Views**: SwiftUI views (`ContentView`, `InputView`, `RecordListView1`)
-- **ViewModels**: Не используются явно, логика встроена в Views
+- **ViewModels**: Использутеся для бизнес логики, взаимодействия с сервисами для записи и хранения информации
 - **Models**: Data structures (`Record`, `SugarSession`, `InsulinType`)
-- **Services**: Business logic (`DataStore`, `PDFService`)
+- **Services**: Хранение и шеринг данных (`DataStore`, `PDFService`)
 
 ### Dependency Injection
 ```swift
@@ -43,9 +43,11 @@ final class DataStore: ObservableObject {
 ### 2. Strategy Pattern (SugarColorLogic)
 ```swift
 struct SugarColorLogic {
-    static func color(for record: Record, 
-                     previousRecord: Record?, 
-                     isFirstSugarOfDay: Bool) -> Color {
+    static func color(
+        for record: Record,
+        previousRecord: Record?,
+        isFirstSugarOfDay: Bool
+    ) -> Color {
         // Различные стратегии определения цвета
         // в зависимости от контекста
     }
@@ -87,6 +89,7 @@ struct PDFService {
 ### 1. Группировка данных
 ```swift
 // Группировка записей по дням
+// TODO: использовать специальную структуру – исправить
 private var groupedRecords: [Date: [Record]] {
     Dictionary(grouping: dataStore.records) { record in
         Calendar.current.startOfDay(for: record.date)
@@ -123,9 +126,11 @@ struct RecordRowView: View {
     
     // Вся логика представления изолирована в компоненте
     private var sugarDisplayColor: Color {
-        SugarColorLogic.color(for: record, 
-                             previousRecord: previousRecord, 
-                             isFirstSugarOfDay: isFirstSugarOfDay)
+        SugarColorLogic.color(
+            for: record,
+            previousRecord: previousRecord,
+            isFirstSugarOfDay: isFirstSugarOfDay
+        )
     }
 }
 ```
@@ -188,7 +193,7 @@ struct ContentView: View {
         NavigationView {
             ZStack {
                 RecordListView1()  // Основной контент
-                addButton         // Floating action button
+                addButton          // Floating action button
             }
         }
     }
