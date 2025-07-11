@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SugarSession: Identifiable, Hashable {
+struct SugarSession: Identifiable, Hashable, Codable {
     let id = UUID()
     let date: Date
     let records: [Record]

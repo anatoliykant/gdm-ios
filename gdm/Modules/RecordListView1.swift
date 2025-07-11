@@ -96,16 +96,20 @@ struct RecordListView1: View {
         for rec in dayRecords {
             if current.isEmpty || (current.first?.food == nil && rec.food == nil) {
                 current.append(rec)
-            } else if rec.food != nil {
-                sessions.append(SugarSession(date: current.first!.date, records: current))
-                current = [rec]
-            } else {
-                current.append(rec)
+                    } else if rec.food != nil {
+            if let firstRecord = current.first {
+                sessions.append(SugarSession(date: firstRecord.date, records: current))
             }
+            current = [rec]
+        } else {
+            current.append(rec)
         }
-        if !current.isEmpty {
-            sessions.append(SugarSession(date: current.first!.date, records: current))
+    }
+    if !current.isEmpty {
+        if let firstRecord = current.first {
+            sessions.append(SugarSession(date: firstRecord.date, records: current))
         }
+    }
         return sessions
     }
     

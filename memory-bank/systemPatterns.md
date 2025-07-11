@@ -184,6 +184,65 @@ Record (main entity)
 - Services получают зависимости через конструктор
 - Models не зависят от UI
 
+## Правила безопасности кода
+
+### ⚠️ КРИТИЧЕСКОЕ: Никогда не использовать Force Unwrap (!)
+**Запрещено:**
+```swift
+let value = someOptional!  // НИКОГДА НЕ ДЕЛАТЬ
+let text = record.food!    // КРАЙНЕ ОПАСНО
+```
+
+**Правильно:**
+```swift
+// Guard let для early return
+guard let value = someOptional else { return }
+
+// If let для условной обработки
+if let food = record.food {
+    processFood(food)
+}
+
+// Nil coalescing для значений по умолчанию
+let text = record.food ?? "Не указано"
+
+// Optional chaining
+let count = record.food?.count
+
+// Optional binding с fallback
+let safeValue = someOptional ?? defaultValue
+```
+
+### Безопасная работа с Optional
+
+**1. Guard Let Pattern**
+```swift
+func updateRecord(_ record: Record) throws {
+    guard let index = records.firstIndex(where: { $0.id == record.id }) else {
+        throw DataError.recordNotFound
+    }
+    records[index] = record
+}
+```
+
+**2. Nil Coalescing**
+```swift
+let insulinUnits = record.insulinUnits ?? 0
+let foodDescription = record.food ?? "Не указано"
+```
+
+**3. Optional Chaining**
+```swift
+let trimmedFood = record.food?.trimmingCharacters(in: .whitespacesAndNewlines)
+let foodLength = record.food?.count ?? 0
+```
+
+**4. Compact Map для коллекций**
+```swift
+let validUnits = records.compactMap { $0.insulinUnits }
+let foodItems = records.compactMap { $0.food }
+```
+
 ## Паттерны UI
 
 ### Composition Pattern

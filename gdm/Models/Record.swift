@@ -4,7 +4,7 @@
 
 import SwiftUI
 
-struct Record: Identifiable, Hashable {
+struct Record: Identifiable, Hashable, Codable {
     let id = UUID()
     var date: Date = Date()
     var sugarLevel: Double? = nil
@@ -18,7 +18,14 @@ struct Record: Identifiable, Hashable {
 
     // Computed property to check if insulin was administered
     var didTakeInsulin: Bool {
-        return insulinType != .none && insulinUnits != nil && insulinUnits! > 0
+        guard let units = insulinUnits else { return false }
+        return insulinType != .none && units > 0
+    }
+    
+    // Computed property to check if record has meal
+    var hasMeal: Bool {
+        guard let food = food else { return false }
+        return !food.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
 
@@ -26,7 +33,19 @@ extension Record {
     static var mockArray: [Record] = {
         let calendar = Calendar.current
         let today = Date()
-        // let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        
+        // Безопасный метод создания дат
+        func safeDate(byAdding component: Calendar.Component, value: Int, to date: Date) -> Date {
+            return calendar.date(byAdding: component, value: value, to: date) ?? date
+        }
+        
+        func safeDateTime(byAdding component: Calendar.Component, value: Int, to date: Date, hour: Int, minute: Int) -> Date {
+            guard let dayDate = calendar.date(byAdding: component, value: value, to: date),
+                  let exactDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: dayDate) else {
+                return date
+            }
+            return exactDate
+        }
         return [
             
             // MARK: Today

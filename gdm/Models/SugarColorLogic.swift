@@ -18,7 +18,9 @@ struct SugarColorLogic {
         }
 
         // 2. Сахар после еды
-        if let prevRecord = previousRecord, prevRecord.food != nil && !prevRecord.food!.isEmpty {
+        if let prevRecord = previousRecord, 
+           let prevFood = prevRecord.food, 
+           !prevFood.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let timeDifferenceInHours = record.date.timeIntervalSince(prevRecord.date) / 3600
 
             if timeDifferenceInHours >= 0.8, timeDifferenceInHours < 1.8 { // Примерно 1 час

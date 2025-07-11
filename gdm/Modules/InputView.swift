@@ -319,14 +319,18 @@ struct InputView: View {
         let units = selectedInsulinType == .none ? nil : Int(insulinUnitsString)
         let bu = isFoodEntered ? Double(breadUnitsString.replacingOccurrences(of: ",", with: ".")) : nil
 
-        if selectedInsulinType != .none && (units == nil || units! < 0) {
-            print("Validation: Insulin units must be non-negative if insulin type is selected.")
-            return
+        if selectedInsulinType != .none {
+            guard let insulinUnits = units, insulinUnits >= 0 else {
+                print("Validation: Insulin units must be non-negative if insulin type is selected.")
+                return
+            }
         }
         
-        if isFoodEntered && (bu == nil || bu! < 0) {
-             print("Validation: Bread units must be non-negative if food is entered.")
-            return
+        if isFoodEntered {
+            guard let breadUnits = bu, breadUnits >= 0 else {
+                print("Validation: Bread units must be non-negative if food is entered.")
+                return
+            }
         }
 
         let newRecord = Record(
@@ -337,10 +341,16 @@ struct InputView: View {
             food: isFoodEntered ? foodDescription.trimmingCharacters(in: .whitespacesAndNewlines) : nil,
             breadUnits: bu
         )
-        dataStore.addRecord(newRecord)
-        clearInputFields()
-        focusedField = nil
-        dismiss()
+        
+        let result = dataStore.addRecordSafely(newRecord)
+        if result.isSuccess {
+            clearInputFields()
+            focusedField = nil
+            dismiss()
+        } else {
+            // TODO: Показать ошибку пользователю
+            print("Ошибка валидации: \(result.errorMessage ?? "Неизвестная ошибка")")
+        }
     }
 
     private func clearInputFields() {

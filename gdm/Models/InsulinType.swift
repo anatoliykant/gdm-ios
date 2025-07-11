@@ -9,7 +9,7 @@ import SwiftUI
 
 
 ///  Типы инсулина, которые используются в приложении.
-enum InsulinType: String, CaseIterable, Identifiable, Hashable {
+enum InsulinType: String, CaseIterable, Identifiable, Hashable, Codable {
     case none = "Нет"
     case novorapid = "Новорапид"
     case levemir = "Левемир"

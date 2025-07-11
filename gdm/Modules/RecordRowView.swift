@@ -340,7 +340,7 @@ struct RecordRowView: View {
         food: "Завтрак: каша и фрукт. Это довольно длинное описание еды, чтобы проверить, как TextEditor будет обрабатывать несколько строк и перенос текста.",
         breadUnits: 3.0
     )
-    previewDataStore.addRecord(record2_food_insulin)
+    previewDataStore.records.append(record2_food_insulin)
     
     let record3_sugar_after_1h_meal = Record(
         date: calendar.date(byAdding: .hour, value: -2, to: now)!,
