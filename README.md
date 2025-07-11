@@ -86,9 +86,26 @@ GDM (Gestational Diabetes Mellitus) - это iOS приложение, разр�
 
 ## 🧪 Тестирование
 
+### 📊 Статистика тестов
+
+| Дата | Количество тестов | Покрытие кода | Статус |
+|------|------------------|---------------|---------|
+| 11.07.2025 | 55 | 59.8% | ✅ Проходят |
+
+**Структура тестов:**
+- **DataStoreTests**: 14 тестов - управление данными
+- **ValidationServiceTests**: 21 тест - валидация данных  
+- **SugarColorLogicTests**: 20 тестов - логика цветовой индикации
+- **gdmTests**: 1 базовый тест
+
+### 🚀 Запуск тестов
+
 ```bash
 # Unit тесты
-xcodebuild test -scheme gdm -destination 'platform=iOS Simulator,name=iPhone 15'
+xcodebuild test -scheme gdm -destination 'platform=iOS Simulator,name=iPhone 16'
+
+# Unit тесты с покрытием кода
+xcodebuild test -scheme gdm -destination 'platform=iOS Simulator,name=iPhone 16' -enableCodeCoverage YES
 
 # Или через Xcode
 cmd+U
