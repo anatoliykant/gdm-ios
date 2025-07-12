@@ -23,35 +23,35 @@ struct RecordListView1: View {
         List {
             ForEach(sortedDays, id: \.self) { day in
                 Section(
-                    header: dayHeader(for: day)
+                    header: dayHeaderView(for: day)
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.primary),
+                        .foregroundColor(.primary)
+                        .accessibilityIdentifier("DayHeader-\(day.timeIntervalSince1970)"),
                     footer: dayResultFooterViewFor(day: day)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.primary)
+                        .accessibilityIdentifier("DayFooter-\(day.timeIntervalSince1970)")
                 ) {
                     ForEach(sessions(for: day)) { session in
                         SessionRowView(session: session)
                              .listRowInsets(EdgeInsets())
                              .padding(.horizontal, 6)
                              .listRowSeparator(.hidden)
+                             .accessibilityIdentifier("SessionRow-\(session.id)")
                     }
                     .padding(.top, 5)
                     .padding(.bottom, 6)
                 }
+                .accessibilityIdentifier("DaySection-\(day.timeIntervalSince1970)")
             }
-//            .padding(.horizontal, 16)
         }
-//        .listStyle(PlainListStyle())
-//                .border(Color.gray.opacity(0.8), width: 1)
-        //        .cornerRadius(10)
-//         .scrollContentBackground(.hidden)
+        .accessibilityIdentifier("RecordsList")
     }
     
-    private func dayHeader(for day: Date) -> some View {
+    private func dayHeaderView(for day: Date) -> some View {
         HStack {
             Image(systemName: "calendar")
-            dayHeader(for: day)
+            dayHeaderText(for: day)
         }
     }
     
@@ -75,7 +75,7 @@ struct RecordListView1: View {
         }
     }
 
-    private func dayHeader(for date: Date) -> Text {
+    private func dayHeaderText(for date: Date) -> Text {
         let formatter = DateFormatter()
         formatter.locale = Locale.autoupdatingCurrent // Locale(identifier: "ru_RU")
         formatter.dateFormat = "d MMMM yyyy"

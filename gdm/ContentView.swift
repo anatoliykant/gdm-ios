@@ -1,5 +1,6 @@
-import SwiftUI
+
 import PDFKit
+import SwiftUI
 
 // TODO:
 // 1. Поправить формат шаринга PDF
@@ -29,14 +30,17 @@ struct ContentView: View {
             ZStack {
                 
                 RecordListView1()
+                    .accessibilityIdentifier("RecordListView")
                 
                 addButton
             }
+            .accessibilityIdentifier("MainNavigationView")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { PDFService(dataStore: dataStore).sharePDF() }) {
                         Image(systemName: "square.and.arrow.up")
                     }
+                    .accessibilityIdentifier("ExportPDFButton")
                 }
             }
             .navigationTitle("Дневник сахара")
@@ -69,6 +73,8 @@ struct ContentView: View {
                 .clipShape(Circle())
                 .shadow(radius: 4)
                 .padding()
+                .accessibilityIdentifier("AddRecordButton")
+                .accessibilityLabel("Добавить запись")
             }
         }
     }

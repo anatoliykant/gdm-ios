@@ -56,24 +56,33 @@ struct InputView: View {
         VStack(alignment: .leading, spacing: 12) {
             
             title
+                .accessibilityIdentifier("InputViewTitle")
             
             dateView
+                .accessibilityIdentifier("DatePicker")
             
             timeView
+                .accessibilityIdentifier("TimePicker")
 
             sugarInputView
+                .accessibilityIdentifier("SugarInputField")
 
             insulinRow
+                .accessibilityIdentifier("InsulinRow")
 
             foodDescriptionView
+                .accessibilityIdentifier("FoodDescriptionField")
             
             breadUnitsView()
+                .accessibilityIdentifier("BreadUnitsField")
             
             addButton
+                .accessibilityIdentifier("AddRecordButton")
             
             Spacer()
             
         }
+        .accessibilityIdentifier("InputViewContainer")
         .animation(.easeInOut, value: foodDescription.isEmpty)
         .padding(.all, 16)
         .overlay(
@@ -94,6 +103,7 @@ struct InputView: View {
                     Button("Готово") {
                         focusedField = nil // This will attempt to dismiss keyboard
                     }
+                    .accessibilityIdentifier("KeyboardDoneButton")
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -303,7 +313,7 @@ struct InputView: View {
                 .foregroundColor(Color(.systemBackground))
                 .cornerRadius(10)
         }
-        .disabled(!sugarString.isEmpty)
+        .disabled(sugarString.isEmpty)
     }
         
     private func formatBreadUnits(_ value: Double) -> String {
