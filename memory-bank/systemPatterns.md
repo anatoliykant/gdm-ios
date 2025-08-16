@@ -316,4 +316,11 @@ if !foodDescription.isEmpty {
 - Каждый сервис/модель в отдельном файле тестов
 - Comprehensive coverage для бизнес-логики
 - Edge cases и error handling
-- **Цель: 70%+ покрытие кода** ✅ **ДОСТИГНУТА** 
+- **Цель: 70%+ покрытие кода** ✅ **ДОСТИГНУТА**
+
+### UI Testing & Accessibility Rules
+- **НИКОГДА** не добавлять `accessibilityIdentifier` для `ZStack` элементов
+- `ZStack` является контейнером и не должен иметь собственный accessibility identifier
+- Это может нарушить работу UI тестов и иерархию accessibility
+- Для UI тестов используйте accessibility identifiers только для конкретных элементов (`Button`, `TextField`, etc.)
+- Используйте `throws` вместо `Bool` возврата для лучшей отладки тестов 
