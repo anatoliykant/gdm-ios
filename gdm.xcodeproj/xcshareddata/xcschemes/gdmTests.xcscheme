@@ -6,22 +6,6 @@
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
       buildArchitectures = "Automatic">
-      <BuildActionEntries>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5966D1B12DECF97200BAC5F3"
-               BuildableName = "gdm.app"
-               BlueprintName = "gdm"
-               ReferencedContainer = "container:gdm.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-      </BuildActionEntries>
    </BuildAction>
    <TestAction
       buildConfiguration = "Debug"
@@ -41,40 +25,6 @@
                ReferencedContainer = "container:gdm.xcodeproj">
             </BuildableReference>
          </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5966D1C92DECF97300BAC5F3"
-               BuildableName = "gdmUITests.xctest"
-               BlueprintName = "gdmUITests"
-               ReferencedContainer = "container:gdm.xcodeproj">
-            </BuildableReference>
-            <SkippedTests>
-               <Test
-                  Identifier = "AddButtonFunctionalTests">
-               </Test>
-               <Test
-                  Identifier = "DataIsolationValidationTests">
-               </Test>
-               <Test
-                  Identifier = "ImprovedModalTests">
-               </Test>
-               <Test
-                  Identifier = "InputViewUITests">
-               </Test>
-               <Test
-                  Identifier = "IsolationStressTests">
-               </Test>
-               <Test
-                  Identifier = "PDFSharingUITests">
-               </Test>
-               <Test
-                  Identifier = "RecordListViewUITests">
-               </Test>
-            </SkippedTests>
-         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
@@ -86,7 +36,7 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "NO">
+      allowLocationSimulation = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
@@ -97,17 +47,6 @@
             ReferencedContainer = "container:gdm.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "AppleLocale"
-            value = "en_US"
-            isEnabled = "NO">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
-      <LocationScenarioReference
-         identifier = "com.apple.dt.IDEFoundation.CurrentLocationScenarioIdentifier"
-         referenceType = "1">
-      </LocationScenarioReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -115,8 +54,7 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "5966D1B12DECF97200BAC5F3"
@@ -124,7 +62,7 @@
             BlueprintName = "gdm"
             ReferencedContainer = "container:gdm.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

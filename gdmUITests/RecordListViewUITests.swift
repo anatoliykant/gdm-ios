@@ -9,66 +9,91 @@ import XCTest
 
 final class RecordListViewUITests: XCTestCase {
     
+    enum TestError: Error {
+        case addButtonNotFound
+        case inputFormNotFound
+        case sugarFieldNotFound
+        case submitButtonNotFound
+        case submitButtonDisabled
+        case navigationBarNotFound
+        case recordCellNotFound
+    }
+    
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
     
-    func createTestRecord(app: XCUIApplication) -> Bool {
+    private func createTestRecord(app: XCUIApplication) throws {
         // Открываем форму добавления
-        let addButton = app.buttons.containing(NSPredicate(format: "label CONTAINS 'Добавить запись'")).firstMatch
-        guard addButton.waitForExistence(timeout: 5) else { return false }
+        let addButton = app.buttons["AddRecordButton"]
+        XCTAssertTrue(waitForElement(addButton), "Add button should exist")
         addButton.tap()
         
         // Ждем открытия формы
         let inputForm = app.staticTexts["Добавить запись"]
-        guard inputForm.waitForExistence(timeout: 5) else { return false }
+        guard inputForm.waitForExistence(timeout: 5) else {
+            throw TestError.inputFormNotFound
+        }
         
         // Заполняем сахар
         let sugarField = app.textFields.containing(NSPredicate(format: "placeholderValue CONTAINS 'Сахар'")).firstMatch
-        guard sugarField.waitForExistence(timeout: 3) else { return false }
+        guard sugarField.waitForExistence(timeout: 3) else {
+            throw TestError.sugarFieldNotFound
+        }
         sugarField.tap()
         sugarField.typeText("6.5")
         
         // Ждем, пока кнопка станет активной
         let submitButton = app.buttons["Добавить"]
-        guard submitButton.waitForExistence(timeout: 3) else { return false }
+        guard submitButton.waitForExistence(timeout: 3) else {
+            throw TestError.submitButtonNotFound
+        }
         
         // Ждем активации кнопки
         let predicate = NSPredicate(format: "isEnabled == true")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: submitButton)
-        let result = XCTWaiter.wait(for: [expectation], timeout: 3.0)
-        guard result == .completed else { return false }
+        guard XCTWaiter.wait(for: [expectation], timeout: 3) == .completed else {
+            throw TestError.submitButtonDisabled
+        }
         
         submitButton.tap()
         
         // Ждем возвращения на главный экран и убеждаемся что форма закрылась
-        guard app.navigationBars["Дневник сахара"].waitForExistence(timeout: 5) else { return false }
+        guard app.navigationBars["Дневник сахара"].waitForExistence(timeout: 5) else {
+            throw TestError.navigationBarNotFound
+        }
         
         // Дополнительная проверка что мы вернулись на главный экран
-        let formDisappeared = !inputForm.exists
-        return formDisappeared
+        let firstCell = app.tables.firstMatch.cells.element(boundBy: 0)
+        guard firstCell.waitForExistence(timeout: 5) else {
+            throw TestError.recordCellNotFound
+        }
     }
     
     func testRecordListExists() {
         let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
         app.launch()
         
         // Проверяем наличие основного списка - сначала проверим все возможные элементы
-        let recordsList = app.tables.firstMatch
-        let collectionView = app.collectionViews.firstMatch
-        let scrollView = app.scrollViews.firstMatch
+        let recordsList = app.collectionViews["RecordsList"]
         
-        // Список должен существовать в одном из форматов
-        XCTAssertTrue(recordsList.exists || collectionView.exists || scrollView.exists)
+        // Список должен существовать
+        XCTAssertTrue(recordsList.exists)
     }
     
-    func testRecordCreationAndDisplay() {
+    func testRecordCreationAndDisplay() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
         app.launch()
         
         // Создаем тестовую запись
-        let recordCreated = createTestRecord(app: app)
-        XCTAssertTrue(recordCreated, "Failed to create test record")
+        do {
+            try createTestRecord(app: app)
+        } catch {
+            XCTFail("Record creation failed with error: \(error)")
+            return
+        }
         
         // Даем время для обновления UI
         Thread.sleep(forTimeInterval: 1.0)
@@ -90,11 +115,16 @@ final class RecordListViewUITests: XCTestCase {
     
     func testTodayHeaderExists() {
         let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
         app.launch()
         
         // Создаем запись
-        let recordCreated = createTestRecord(app: app)
-        XCTAssertTrue(recordCreated, "Failed to create test record")
+        do {
+            try createTestRecord(app: app)
+        } catch {
+            XCTFail("Record creation failed with error: \(error)")
+            return
+        }
         
         // Даем время для обновления UI
         Thread.sleep(forTimeInterval: 1.0)
@@ -109,16 +139,19 @@ final class RecordListViewUITests: XCTestCase {
     
     func testMultipleRecordsGrouping() {
         let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
         app.launch()
         
         var successfulRecords = 0
         
         // Создаем несколько записей
         for _ in 1...3 {
-            let recordCreated = createTestRecord(app: app)
-            if recordCreated {
+            do {
+                try createTestRecord(app: app)
                 successfulRecords += 1
                 Thread.sleep(forTimeInterval: 0.5) // Небольшая задержка между записями
+            } catch {
+                // ignore failures and continue
             }
         }
         
@@ -147,40 +180,47 @@ final class RecordListViewUITests: XCTestCase {
     
     func testScrolling() {
         let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
         app.launch()
+        
+        // Create extra records for scroll testing
+        for _ in 1...3 {
+            try? createTestRecord(app: app)
+        }
         
         // Сначала проверяем что есть хоть какой-то scrollable контейнер
         let recordsList = app.tables.firstMatch
         let collectionView = app.collectionViews.firstMatch
         let scrollView = app.scrollViews.firstMatch
         
-        var scrollableElement: XCUIElement?
-        
-        if recordsList.exists {
-            scrollableElement = recordsList
-        } else if collectionView.exists {
-            scrollableElement = collectionView
-        } else if scrollView.exists {
-            scrollableElement = scrollView
+        guard let element = (
+            recordsList.exists
+                 ? recordsList
+                 : collectionView.exists
+                    ? collectionView
+                    : scrollView.exists
+                        ? scrollView
+                        : nil
+        ) else {
+            XCTFail("No scrollable element found")
+            return
         }
         
-        XCTAssertNotNil(scrollableElement, "No scrollable element found")
-        
         // Создаем несколько записей для тестирования скроллинга
-        var recordsCreated = 0
         for _ in 1...3 {
-            if createTestRecord(app: app) {
-                recordsCreated += 1
-                Thread.sleep(forTimeInterval: 0.5)
-            }
+            try? createTestRecord(app: app)
         }
         
         // Даем время для обновления UI
         Thread.sleep(forTimeInterval: 1.0)
         
         // Тестируем скроллинг на любом найденном элементе
-        if let element = scrollableElement {
+        if element.elementType == .table || element.elementType == .collectionView {
+            let firstCell = element.cells.firstMatch
+            XCTAssertTrue(firstCell.exists, "No items to scroll")
             element.swipeUp()
+            let lastCell = element.cells.element(boundBy: element.cells.count - 1)
+            XCTAssertTrue(lastCell.waitForExistence(timeout: 5), "Did not find last cell after scroll up")
             element.swipeDown()
             
             // Элемент должен по-прежнему существовать после скроллинга

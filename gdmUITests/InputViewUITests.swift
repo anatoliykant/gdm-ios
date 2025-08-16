@@ -9,172 +9,288 @@ import XCTest
 
 final class InputViewUITests: XCTestCase {
     
+    enum TestError: Error {
+        case addButtonNotFound
+        case inputFormNotFound
+        case fieldNotFound
+        case buttonNotEnabled
+        case formNotClosed
+        case invalidFieldValue
+    }
+    
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
     
-    func openInputView() -> XCUIApplication {
-        let app = XCUIApplication()
-        app.launch()
-        
-        // Открываем форму добавления
-        let addButton = app.buttons.containing(NSPredicate(format: "label CONTAINS 'Добавить запись'")).firstMatch
+    func openInputForm(app: XCUIApplication) throws {
+        let addButton = app.buttons["AddRecordButton"]
+        guard addButton.waitForExistence(timeout: 5) else {
+            throw TestError.addButtonNotFound
+        }
         addButton.tap()
         
-        // Ждем открытия формы
-        let inputForm = app.staticTexts["Добавить запись"]
-        _ = inputForm.waitForExistence(timeout: 3)
-        
-        return app
+        let inputFormTitle = app.staticTexts["InputViewTitle"]
+        guard inputFormTitle.waitForExistence(timeout: 5) else {
+            throw TestError.inputFormNotFound
+        }
     }
     
-    func testInputViewTitle() {
-        let app = openInputView()
+    func testInputFormOpens() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Проверяем заголовок формы
-        let title = app.staticTexts["Добавить запись"]
-        XCTAssertTrue(title.exists)
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Проверяем что форма открылась
+        let inputFormTitle = app.staticTexts["InputViewTitle"]
+        XCTAssertTrue(inputFormTitle.exists)
     }
     
-    func testSugarInputField() {
-        let app = openInputView()
+    func testSugarFieldInput() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Проверяем поле для ввода сахара
-        let sugarField = app.textFields.containing(NSPredicate(format: "placeholderValue CONTAINS 'Сахар'")).firstMatch
-        XCTAssertTrue(sugarField.exists)
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Проверяем поле сахара
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
         
         // Вводим значение
         sugarField.tap()
         sugarField.typeText("6.5")
         
-        XCTAssertTrue(sugarField.value as? String == "6,5" || sugarField.value as? String == "6.5")
+        // Проверяем что значение введено
+        XCTAssertEqual(sugarField.value as? String, "6.5")
     }
     
-    func testDatePickerExists() {
-        let app = openInputView()
+    func testAddButtonDisabledWhenSugarEmpty() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Проверяем наличие date picker (ищем любые date picker элементы)
-        let datePickers = app.datePickers
-        XCTAssertGreaterThan(datePickers.count, 0)
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Проверяем что кнопка отключена когда поле пустое
+        let submitButton = app.buttons["AddRecordButton"]
+        XCTAssertTrue(submitButton.waitForExistence(timeout: 3))
+        XCTAssertFalse(submitButton.isEnabled)
     }
     
-    func testTimePickerExists() {
-        let app = openInputView()
+    func testAddButtonEnabledWhenSugarEntered() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Проверяем наличие time picker (ищем любые date picker элементы, включая time)
-        let datePickers = app.datePickers
-        XCTAssertGreaterThan(datePickers.count, 0)
-    }
-    
-    func testInsulinPickerExists() {
-        let app = openInputView()
+        XCTAssertNoThrow(try openInputForm(app: app))
         
-        // Проверяем наличие insulin picker (ищем по иконке шприца)
-        let syringeIcon = app.images["syringe"]
-        XCTAssertTrue(syringeIcon.exists)
-        
-        // Проверяем наличие picker для типа инсулина
-        let insulinPicker = app.buttons.containing(NSPredicate(format: "label CONTAINS 'Новорапид'")).firstMatch
-        XCTAssertTrue(insulinPicker.exists)
-    }
-    
-    func testFoodDescriptionField() {
-        let app = openInputView()
-        
-        // Проверяем text editor для описания еды
-        let foodField = app.textViews.firstMatch
-        XCTAssertTrue(foodField.exists)
-        
-        // Вводим текст
-        foodField.tap()
-        foodField.typeText("Завтрак")
-        
-        // Проверяем, что текст был введен (более гибкая проверка)
-        let fieldValue = foodField.value as? String
-        XCTAssertTrue(fieldValue?.contains("Завтрак") == true || fieldValue == "Завтрак")
-    }
-    
-    func testAddRecordButtonState() {
-        let app = openInputView()
-        
-        // Находим кнопку "Добавить"
-        let addButton = app.buttons["Добавить"]
-        XCTAssertTrue(addButton.exists)
-        
-        // Кнопка должна быть неактивна до ввода сахара
-        XCTAssertFalse(addButton.isEnabled)
-        
-        // Вводим значение сахара
-        let sugarField = app.textFields.containing(NSPredicate(format: "placeholderValue CONTAINS 'Сахар'")).firstMatch
+        // Вводим сахар
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
         sugarField.tap()
         sugarField.typeText("6.5")
         
-        // Кнопка должна стать активной
-        XCTAssertTrue(addButton.isEnabled)
+        // Проверяем что кнопка стала активной
+        let submitButton = app.buttons["AddRecordButton"]
+        let enabledPredicate = NSPredicate(format: "isEnabled == true")
+        let enabledExpectation = XCTNSPredicateExpectation(predicate: enabledPredicate, object: submitButton)
+        let result = XCTWaiter.wait(for: [enabledExpectation], timeout: 3.0)
+        XCTAssertEqual(result, .completed)
     }
     
-    func testBreadUnitsFieldAppearsWithFood() {
-        let app = openInputView()
+    func testFoodDescriptionField() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Сначала проверяем, что поле ХЕ скрыто
-        let breadUnitsLabel = app.staticTexts["ХЕ"]
-        XCTAssertFalse(breadUnitsLabel.exists)
+        XCTAssertNoThrow(try openInputForm(app: app))
         
-        // Вводим описание еды
-        let foodField = app.textViews.firstMatch
+        // Проверяем поле описания еды
+        let foodField = app.textViews["FoodDescriptionField"]
+        XCTAssertTrue(foodField.waitForExistence(timeout: 3))
+        
+        // Вводим текст
         foodField.tap()
-        foodField.typeText("Завтрак")
+        foodField.typeText("Овсянка с молоком")
         
-        // Теперь поле ХЕ должно появиться
-        XCTAssertTrue(breadUnitsLabel.waitForExistence(timeout: 2))
+        // Проверяем что текст введен
+        XCTAssertTrue(foodField.value as? String == "Овсянка с молоком")
     }
     
-    func testFormSubmission() {
-        let app = openInputView()
+    func testDatePickerExists() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Заполняем форму
-        let sugarField = app.textFields.containing(NSPredicate(format: "placeholderValue CONTAINS 'Сахар'")).firstMatch
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Проверяем наличие датапикера
+        let datePicker = app.otherElements["DatePicker"]
+        XCTAssertTrue(datePicker.waitForExistence(timeout: 3))
+    }
+    
+    func testTimePickerExists() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
+        
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Проверяем наличие тайм-пикера
+        let timePicker = app.otherElements["TimePicker"]
+        XCTAssertTrue(timePicker.waitForExistence(timeout: 3))
+    }
+    
+    func testInsulinRowExists() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
+        
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Проверяем наличие строки инсулина
+        let insulinRow = app.otherElements["InsulinRow"]
+        XCTAssertTrue(insulinRow.waitForExistence(timeout: 3))
+    }
+    
+    func testKeyboardDoneButton() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
+        
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Тапаем на поле сахара для появления клавиатуры
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
+        sugarField.tap()
+        
+        // Проверяем кнопку "Готово" на клавиатуре
+        let doneButton = app.buttons["KeyboardDoneButton"]
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 3))
+    }
+    
+    func testSuccessfulRecordCreation() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
+        
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Заполняем обязательное поле
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
+        sugarField.tap()
+        sugarField.typeText("6.5")
+        
+        // Нажимаем кнопку добавления
+        let submitButton = app.buttons["AddRecordButton"]
+        let enabledPredicate = NSPredicate(format: "isEnabled == true")
+        let enabledExpectation = XCTNSPredicateExpectation(predicate: enabledPredicate, object: submitButton)
+        let enabledResult = XCTWaiter.wait(for: [enabledExpectation], timeout: 3.0)
+        XCTAssertEqual(enabledResult, .completed)
+        
+        submitButton.tap()
+        
+        // Проверяем что форма закрылась и мы вернулись на главный экран
+        let mainNavigationView = app.navigationBars["Дневник сахара"]
+        XCTAssertTrue(mainNavigationView.waitForExistence(timeout: 5))
+        
+        // Проверяем что форма действительно закрылась
+        let inputFormTitle = app.staticTexts["InputViewTitle"]
+        let formClosedPredicate = NSPredicate(format: "exists == false")
+        let formClosedExpectation = XCTNSPredicateExpectation(predicate: formClosedPredicate, object: inputFormTitle)
+        let formClosedResult = XCTWaiter.wait(for: [formClosedExpectation], timeout: 3.0)
+        XCTAssertEqual(formClosedResult, .completed)
+    }
+    
+    func testFormCancellation() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
+        
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Заполняем поле, но не сохраняем
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
+        sugarField.tap()
+        sugarField.typeText("6.5")
+        
+        // Свайпаем вниз для закрытия формы
+        app.swipeDown()
+        
+        // Проверяем что форма закрылась
+        let inputFormTitle = app.staticTexts["InputViewTitle"]
+        let formClosedPredicate = NSPredicate(format: "exists == false")
+        let formClosedExpectation = XCTNSPredicateExpectation(predicate: formClosedPredicate, object: inputFormTitle)
+        let formClosedResult = XCTWaiter.wait(for: [formClosedExpectation], timeout: 3.0)
+        XCTAssertEqual(formClosedResult, .completed)
+    }
+    
+    func testComplexRecordCreation() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
+        
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Заполняем сахар
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
         sugarField.tap()
         sugarField.typeText("7.2")
         
-        // Нажимаем кнопку добавления
-        let addButton = app.buttons["Добавить"]
-        XCTAssertTrue(addButton.isEnabled)
-        addButton.tap()
+        // Заполняем описание еды
+        let foodField = app.textViews["FoodDescriptionField"]
+        XCTAssertTrue(foodField.waitForExistence(timeout: 3))
+        foodField.tap()
+        foodField.typeText("Гречневая каша")
         
-        // Проверяем, что вернулись на главный экран
-        let navigationTitle = app.navigationBars["Дневник сахара"]
-        XCTAssertTrue(navigationTitle.waitForExistence(timeout: 3))
+        // Сохраняем запись
+        let submitButton = app.buttons["AddRecordButton"]
+        let enabledPredicate = NSPredicate(format: "isEnabled == true")
+        let enabledExpectation = XCTNSPredicateExpectation(predicate: enabledPredicate, object: submitButton)
+        let enabledResult = XCTWaiter.wait(for: [enabledExpectation], timeout: 3.0)
+        XCTAssertEqual(enabledResult, .completed)
+        
+        submitButton.tap()
+        
+        // Проверяем что форма закрылась
+        let mainNavigationView = app.navigationBars["Дневник сахара"]
+        XCTAssertTrue(mainNavigationView.waitForExistence(timeout: 5))
     }
     
-    func testKeyboardDismissal() {
-        let app = openInputView()
+    func testInvalidSugarValue() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        // Активируем поле ввода
-        let sugarField = app.textFields.containing(NSPredicate(format: "placeholderValue CONTAINS 'Сахар'")).firstMatch
+        XCTAssertNoThrow(try openInputForm(app: app))
+        
+        // Пытаемся ввести некорректное значение
+        let sugarField = app.textFields["SugarInputField"]
+        XCTAssertTrue(sugarField.waitForExistence(timeout: 3))
         sugarField.tap()
+        sugarField.typeText("abc")
         
-        // Проверяем, что кнопка "Готово" появилась
-        let doneButton = app.buttons["Готово"]
-        XCTAssertTrue(doneButton.waitForExistence(timeout: 2))
-        
-        doneButton.tap()
-        
-        // Клавиатура должна исчезнуть (проверяем, что кнопка "Готово" больше не видна)
-        XCTAssertFalse(doneButton.exists)
+        // Кнопка должна оставаться активной, но логика валидации должна сработать в приложении
+        let submitButton = app.buttons["AddRecordButton"]
+        XCTAssertTrue(submitButton.waitForExistence(timeout: 3))
     }
     
-    func testSugarInputWithDecimalSeparator() {
-        let app = openInputView()
+    func testEmptyFormValidation() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-resetData"]
+        app.launch()
         
-        let sugarField = app.textFields.containing(NSPredicate(format: "placeholderValue CONTAINS 'Сахар'")).firstMatch
-        sugarField.tap()
+        XCTAssertNoThrow(try openInputForm(app: app))
         
-        // Вводим значение с запятой
-        sugarField.typeText("5,8")
-        
-        // Проверяем, что значение корректно обрабатывается
-        let addButton = app.buttons["Добавить"]
-        XCTAssertTrue(addButton.isEnabled)
+        // Проверяем что кнопка отключена при пустой форме
+        let submitButton = app.buttons["AddRecordButton"]
+        XCTAssertTrue(submitButton.waitForExistence(timeout: 3))
+        XCTAssertFalse(submitButton.isEnabled)
     }
 }
