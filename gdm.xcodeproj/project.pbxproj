@@ -29,9 +29,22 @@
 		5966D1CA2DECF97300BAC5F3 /* gdmUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = gdmUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5992C5412E4FC83200A9B0B8 /* Exceptions for "gdm" folder in "gdm" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5966D1B12DECF97200BAC5F3 /* gdm */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5966D1B42DECF97200BAC5F3 /* gdm */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5992C5412E4FC83200A9B0B8 /* Exceptions for "gdm" folder in "gdm" target */,
+			);
 			path = gdm;
 			sourceTree = "<group>";
 		};
@@ -397,6 +410,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = gdm/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GDM;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -438,6 +452,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = gdm/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GDM;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
