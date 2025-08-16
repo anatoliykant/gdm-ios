@@ -5,7 +5,7 @@
 import SwiftUI
 
 struct Record: Identifiable, Hashable, Codable {
-    let id = UUID()
+    var id = UUID()
     var date: Date = Date()
     var sugarLevel: Double? = nil
     /// Insulin type and units
