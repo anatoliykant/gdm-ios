@@ -65,16 +65,16 @@ struct InputView: View {
                 .accessibilityIdentifier("TimePicker")
 
             sugarInputView
-                .accessibilityIdentifier("SugarInputField")
+                .accessibilityIdentifier("SugarInputView")
 
             insulinRow
                 .accessibilityIdentifier("InsulinRow")
 
             foodDescriptionView
-                .accessibilityIdentifier("FoodDescriptionField")
+                .accessibilityIdentifier("FoodDescriptionView")
             
             breadUnitsView()
-                .accessibilityIdentifier("BreadUnitsField")
+                .accessibilityIdentifier("BreadUnitsView")
             
             addButton
                 .accessibilityIdentifier("AddRecordButton")
@@ -82,7 +82,8 @@ struct InputView: View {
             Spacer()
             
         }
-        .accessibilityIdentifier("InputViewContainer")
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("InputView") // TODO: Разобраться почему не видно в UI тестах app.otherElements["InputView"]
         .animation(.easeInOut, value: foodDescription.isEmpty)
         .padding(.all, 16)
         .overlay(
@@ -144,6 +145,7 @@ struct InputView: View {
             
             Spacer()
         }
+        .accessibilityElement(children: .contain)
     }
     
     private var timeView: some View {
@@ -171,6 +173,7 @@ struct InputView: View {
             
             Spacer()
         }
+        .accessibilityElement(children: .contain)
     }
     
     private var sugarInputView: some View {
@@ -179,8 +182,10 @@ struct InputView: View {
             Image(systemName: "drop")
                 .foregroundColor(.gray.opacity(0.9))
                 .frame(width: 24, height: 24)
+                .accessibilityIdentifier("SugarInputImage")
             
             TextField("Сахар (ммоль/л)", text: $sugarString)
+                .accessibilityIdentifier("SugarInputField")
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .sugar)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -191,6 +196,7 @@ struct InputView: View {
                         .stroke(Color.gray.opacity(0.6), lineWidth: 1)
                 )
         }
+        .accessibilityElement(children: .contain)
     }
     
     private var insulinRow: some View {
@@ -237,6 +243,7 @@ struct InputView: View {
             
         }
         .animation(.easeInOut, value: selectedInsulinType)
+        .accessibilityElement(children: .contain)
     }
     
     private var foodDescriptionView: some View {
@@ -251,6 +258,7 @@ struct InputView: View {
                 ClearTextEditor(text: $foodDescription)
                     .padding(.horizontal, 8)
                     .focused($focusedField, equals: .food)
+                    .accessibilityIdentifier("FoodDescriptionField")
                 // обёртка сама рисует фон, поэтому дополнительных background() не надо
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
@@ -266,7 +274,9 @@ struct InputView: View {
                 }
                 // The general keyboard toolbar "Done" button should still work.
             }
+            .accessibilityElement(children: .contain)
         }
+        .accessibilityElement(children: .contain)
     }
     
     @ViewBuilder
@@ -299,6 +309,7 @@ struct InputView: View {
                 Spacer()
             }
             .transition(.move(edge: .top).combined(with: .opacity))
+            .accessibilityElement(children: .contain)
         }
         
     }

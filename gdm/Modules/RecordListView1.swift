@@ -15,6 +15,7 @@ struct RecordListView1: View {
         }
     }
 
+    // FIXME: use @Published and dynamic load
     private var sortedDays: [Date] {
         groupedRecords.keys.sorted(by: >)
     }
@@ -52,6 +53,7 @@ struct RecordListView1: View {
         HStack {
             Image(systemName: "calendar")
             dayHeaderText(for: day)
+                .accessibilityIdentifier("DayHeaderText-\(day.timeIntervalSince1970)")
         }
     }
     
@@ -81,7 +83,8 @@ struct RecordListView1: View {
         formatter.dateFormat = "d MMMM yyyy"
         
         if Calendar.current.isDateInToday(date) {
-            return Text("Сегодня, \(formatter.string(from: date))") // FIXME: localization
+            return Text("Сегодня, \(formatter.string(from: date))")
+            // FIXME: localization
         } else if Calendar.current.isDateInYesterday(date) {
             return Text("Вчера, \(formatter.string(from: date))") // FIXME: localization
         }

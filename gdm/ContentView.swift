@@ -28,13 +28,12 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                
                 RecordListView1()
-                    .accessibilityIdentifier("RecordListView")
                 
                 addButton
             }
-            .accessibilityIdentifier("MainNavigationView")
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("ContentViewZStack") // FIXME: проверить в UI тестах работает или нет
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { PDFService(dataStore: dataStore).sharePDF() }) {
@@ -49,8 +48,10 @@ struct ContentView: View {
                 print("isLongTimeFormat: \(isLongTimeFormat)")
             }
         }
+        .accessibilityIdentifier("MainNavigationView")
         .sheet(isPresented: $showInput) {
             InputView()
+                .accessibilityIdentifier("InputViewContainer")
                 .environmentObject(dataStore)
         }
         .sheet(isPresented: $showShareSheet) {
@@ -69,12 +70,12 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .padding()
                 }
+                .frame(width: 60, height: 60)
                 .background(Color.accentColor)
                 .clipShape(Circle())
                 .shadow(radius: 4)
                 .padding()
-                .accessibilityIdentifier("AddRecordButton")
-                .accessibilityLabel("Добавить запись")
+                .accessibilityIdentifier("ShowRecordViewButton")
             }
         }
     }

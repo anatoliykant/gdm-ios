@@ -20,13 +20,13 @@ final class DataStore: ObservableObject {
     private let versionKey = "GDM_DataVersion"
     
     /// UserDefaults для хранения данных (можно инжектить для тестов)
-    private let userDefaults: UserDefaults
+    let userDefaults: UserDefaults
 
     init(loadSampleData: Bool = true, userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
         // Load initial sample data or data from storage
         loadRecords()
-        if loadSampleData && records.isEmpty { // Add sample data if no records are loaded
+        if loadSampleData, records.isEmpty { // Add sample data if no records are loaded
             addSampleData()
         }
     }
