@@ -52,8 +52,7 @@
 - [x] Unit тесты для ValidationService (21 тест, все проходят)
 
 ### В процессе
-- [ ] Unit тесты для SugarColorLogic
-- [ ] Редактирование записей
+- [ ] Реализовать новый UI для окна добавления записей InputView (старый дизайн – https://hackmd.io/_uploads/SJCNwdyYel.png, новый дизайн – https://hackmd.io/_uploads/Sy08D_1Kgx.png)
 
 ### Планируемые следующие шаги
 1. **Техническое улучшение**
