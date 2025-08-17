@@ -52,7 +52,7 @@
 - [x] Unit тесты для ValidationService (21 тест, все проходят)
 
 ### В процессе
-- [ ] Реализовать новый UI для окна добавления записей InputView (старый дизайн – https://hackmd.io/_uploads/SJCNwdyYel.png, новый дизайн – https://hackmd.io/_uploads/Sy08D_1Kgx.png)
+- [ ] Реализовать новый UI для окна добавления записей InputView (старый и новый дизайн лежат в "/gdm/Temp images")
 
 ### Планируемые следующие шаги
 1. **Техническое улучшение**
