@@ -38,39 +38,178 @@ struct InputView: View {
     // MARK: - Lifecycle
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Header
-                headerView
-                    .accessibilityIdentifier("InputViewTitle")
+        VStack(spacing: 16) {
+            // Header
+            headerView
+                .accessibilityIdentifier("InputViewTitle")
+            
+            // Date and Time Row
+            HStack(spacing: 12) {
+                simpleFieldView(
+                    icon: "calendar",
+                    title: "Дата",
+                    content: {
+                        ZStack {
+                            Text(date.stringDate)
+                                .font(.body)
+                            
+                            DatePicker("Дата", selection: $date, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .colorMultiply(.clear)
+                                .labelsHidden()
+                        }
+                    }
+                )
+                .accessibilityIdentifier("DatePicker")
                 
-                // Main Content Cards
-                VStack(spacing: 16) {
-                    // Basic Info Card
-                    basicInfoCard
-                        .accessibilityIdentifier("BasicInfoCard")
-                    
-                    // Insulin Card
-                    insulinCard
-                        .accessibilityIdentifier("InsulinCard")
-                    
-                    // Food Card
-                    foodCard
-                        .accessibilityIdentifier("FoodCard")
-                }
-                
-                // Add Button
-                modernAddButton
-                    .accessibilityIdentifier("AddRecordButton")
-                
-                Spacer(minLength: 20)
+                simpleFieldView(
+                    icon: "clock",
+                    title: "Время",
+                    content: {
+                        ZStack {
+                            Text(date.stringTime)
+                                .font(.body)
+                            
+                            DatePicker("Время", selection: $date, displayedComponents: .hourAndMinute)
+                                .datePickerStyle(.compact)
+                                .colorMultiply(.clear)
+                                .labelsHidden()
+                        }
+                    }
+                )
+                .accessibilityIdentifier("TimePicker")
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
+            
+            // Sugar Level
+            simpleFieldView(
+                icon: "drop",
+                title: "Сахар (ммоль/л)",
+                content: {
+                    TextField("Например: 5.2", text: $sugarString)
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .sugar)
+                        .font(.body)
+                        .accessibilityIdentifier("SugarInputField")
+                }
+            )
+            .accessibilityIdentifier("SugarInputView")
+            
+            // Meal Type (if needed)
+            simpleFieldView(
+                icon: "fork.knife",
+                title: "Что было в меню",
+                content: {
+                    TextField("Описание еды", text: $foodDescription)
+                        .focused($focusedField, equals: .food)
+                        .font(.body)
+                        .accessibilityIdentifier("FoodDescriptionField")
+                }
+            )
+            .accessibilityIdentifier("FoodDescriptionView")
+            
+            // Bread Units (only if food entered)
+            if isFoodEntered {
+                simpleFieldView(
+                    icon: "square.grid.3x3",
+                    title: "ХЕ",
+                    content: {
+                        HStack {
+                            TextField("0", text: $breadUnitsString)
+                                .keyboardType(.decimalPad)
+                                .focused($focusedField, equals: .breadUnits)
+                                .font(.body)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 60)
+                            
+                            Spacer()
+                            
+                            Stepper(
+                                "",
+                                value: Binding(
+                                    get: { Double(breadUnitsString) ?? 1.0 },
+                                    set: { breadUnitsString = String($0) }
+                                ),
+                                in: 0...10,
+                                step: 0.5
+                            )
+                            .labelsHidden()
+                        }
+                    }
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .accessibilityIdentifier("BreadUnitsView")
+            }
+            
+            // Insulin Row
+            HStack(spacing: 12) {
+                simpleFieldView(
+                    icon: "syringe",
+                    title: "Инсулин",
+                    content: {
+                        Picker("Тип инсулина", selection: $selectedInsulinType) {
+                            ForEach(InsulinType.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .font(.body)
+                    }
+                )
+                
+                if selectedInsulinType != .none {
+                    simpleFieldView(
+                        icon: "",
+                        title: "",
+                        content: {
+                            HStack {
+                                TextField("0", text: $insulinUnitsString)
+                                    .keyboardType(.numberPad)
+                                    .focused($focusedField, equals: .insulinUnits)
+                                    .font(.body)
+                                    .multilineTextAlignment(.center)
+                                    .frame(width: 60)
+                                
+                                Spacer()
+                                
+                                Stepper(
+                                    "",
+                                    value: Binding(
+                                        get: { Int(insulinUnitsString) ?? 7 },
+                                        set: { insulinUnitsString = String($0) }
+                                    ),
+                                    in: 1...100
+                                )
+                                .labelsHidden()
+                            }
+                        }
+                    )
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
+            }
+            .accessibilityIdentifier("InsulinRow")
+            
+            // Reminder (if needed)
+            simpleFieldView(
+                icon: "bell",
+                title: "Напоминание",
+                content: {
+                    Text("Настроить позже")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+            )
+            
+            Spacer()
+            
+            // Simple Add Button
+            simpleAddButton
+                .accessibilityIdentifier("AddRecordButton")
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("InputView")
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.systemBackground))
         .animation(.easeInOut(duration: 0.3), value: foodDescription.isEmpty)
         .animation(.easeInOut(duration: 0.3), value: selectedInsulinType)
         .onChange(of: selectedInsulinType) { newValue in
@@ -98,279 +237,57 @@ struct InputView: View {
     // MARK: - Header View
     
     private var headerView: some View {
-        VStack(spacing: 8) {
-            Text("Добавить запись")
-                .font(.title2.bold())
-                .foregroundColor(.primary)
+        Text("Новая запись")
+            .font(.title2.bold())
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    // MARK: - Simple Field View
+    
+    @ViewBuilder
+    private func simpleFieldView<Content: View>(
+        icon: String,
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 12) {
+            if !icon.isEmpty {
+                Image(systemName: icon)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .frame(width: 20, height: 20)
+            }
             
-            Text("Заполните данные о замере")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 8)
-    }
-    
-    // MARK: - Basic Info Card
-    
-    private var basicInfoCard: some View {
-        CardView(title: "Основные данные", icon: "calendar.badge.clock") {
-            VStack(spacing: 16) {
-                // Date and Time Row
-                HStack(spacing: 12) {
-                    // Date
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label("Дата", systemImage: "calendar")
-                            .font(.caption.weight(.medium))
-                            .foregroundColor(.secondary)
-                        
-                        ZStack {
-                            Text(date.stringDate)
-                                .font(.body.weight(.medium))
-                            
-                            DatePicker("Дата", selection: $date, displayedComponents: .date)
-                                .datePickerStyle(.compact)
-                                .colorMultiply(.clear)
-                                .labelsHidden()
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .accessibilityIdentifier("DatePicker")
-                    }
-                    
-                    // Time
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label("Время", systemImage: "clock")
-                            .font(.caption.weight(.medium))
-                            .foregroundColor(.secondary)
-                        
-                        ZStack {
-                            Text(date.stringTime)
-                                .font(.body.weight(.medium))
-                            
-                            DatePicker("Время", selection: $date, displayedComponents: .hourAndMinute)
-                                .datePickerStyle(.compact)
-                                .colorMultiply(.clear)
-                                .labelsHidden()
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .accessibilityIdentifier("TimePicker")
-                    }
-                }
-                
-                // Sugar Level
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("Уровень сахара", systemImage: "drop.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Введите значение", text: $sugarString, prompt: Text("Например: 5.2"))
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .sugar)
-                        .font(.body.weight(.medium))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(focusedField == .sugar ? Color.accentColor : Color.clear, lineWidth: 2)
-                        )
-                        .accessibilityIdentifier("SugarInputField")
-                    
-                    Text("ммоль/л")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.leading, 4)
-                }
+            if !title.isEmpty {
+                Text(title)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .frame(minWidth: 60, alignment: .leading)
             }
+            
+            content()
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
     
-    // MARK: - Insulin Card
+    // MARK: - Simple Add Button
     
-    private var insulinCard: some View {
-        CardView(title: "Инсулин", icon: "syringe.fill") {
-            VStack(spacing: 16) {
-                // Insulin Type
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Тип инсулина")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.secondary)
-                    
-                    Picker("Тип инсулина", selection: $selectedInsulinType) {
-                        ForEach(InsulinType.allCases) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                }
-                
-                // Insulin Units
-                if selectedInsulinType != .none {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Дозировка")
-                            .font(.caption.weight(.medium))
-                            .foregroundColor(.secondary)
-                        
-                        HStack(spacing: 12) {
-                            TextField("Единицы", text: $insulinUnitsString)
-                                .keyboardType(.numberPad)
-                                .focused($focusedField, equals: .insulinUnits)
-                                .font(.body.weight(.medium))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(focusedField == .insulinUnits ? Color.accentColor : Color.clear, lineWidth: 2)
-                                )
-                            
-                            Stepper(
-                                "",
-                                value: Binding(
-                                    get: { Int(insulinUnitsString) ?? 7 },
-                                    set: { insulinUnitsString = String($0) }
-                                ),
-                                in: 1...100
-                            )
-                            .labelsHidden()
-                        }
-                        
-                        Text("единиц")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 4)
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
-        }
-    }
-    
-    // MARK: - Food Card
-    
-    private var foodCard: some View {
-        CardView(title: "Питание", icon: "fork.knife") {
-            VStack(spacing: 16) {
-                // Food Description
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Описание еды")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.secondary)
-                    
-                    ZStack(alignment: .topLeading) {
-                        ClearTextEditor(text: $foodDescription)
-                            .focused($focusedField, equals: .food)
-                            .font(.body)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(focusedField == .food ? Color.accentColor : Color.clear, lineWidth: 2)
-                            )
-                            .frame(height: 100)
-                            .accessibilityIdentifier("FoodDescriptionField")
-                        
-                        if foodDescription.isEmpty {
-                            Text("Например: Овсянка с молоком, банан")
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                }
-                
-                // Bread Units (only shown when food is entered)
-                if isFoodEntered {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Хлебные единицы")
-                            .font(.caption.weight(.medium))
-                            .foregroundColor(.secondary)
-                        
-                        HStack(spacing: 12) {
-                            TextField("ХЕ", text: $breadUnitsString)
-                                .keyboardType(.decimalPad)
-                                .focused($focusedField, equals: .breadUnits)
-                                .font(.body.weight(.medium))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(focusedField == .breadUnits ? Color.accentColor : Color.clear, lineWidth: 2)
-                                )
-                            
-                            Stepper(
-                                "",
-                                value: Binding(
-                                    get: { Double(breadUnitsString) ?? 1.0 },
-                                    set: { breadUnitsString = String($0) }
-                                ),
-                                in: 0...10,
-                                step: 0.5
-                            )
-                            .labelsHidden()
-                        }
-                        
-                        Text("ХЕ")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 4)
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityIdentifier("BreadUnitsView")
-                }
-            }
-        }
-    }
-    
-    // MARK: - Modern Add Button
-    
-    private var modernAddButton: some View {
+    private var simpleAddButton: some View {
         Button(action: addRecord) {
-            HStack(spacing: 8) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title3)
-                
-                Text("Добавить запись")
-                    .font(.body.weight(.semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: sugarString.isEmpty 
-                        ? [Color.gray.opacity(0.6), Color.gray.opacity(0.4)]
-                        : [Color.accentColor, Color.accentColor.opacity(0.8)]
-                    ),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(12)
-            .shadow(color: sugarString.isEmpty ? Color.clear : Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
+            Text("Добавить")
+                .font(.body.weight(.semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.black)
+                .cornerRadius(12)
         }
         .disabled(sugarString.isEmpty)
-        .scaleEffect(sugarString.isEmpty ? 0.98 : 1.0)
+        .opacity(sugarString.isEmpty ? 0.5 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: sugarString.isEmpty)
     }
         
