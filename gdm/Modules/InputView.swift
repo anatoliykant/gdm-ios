@@ -5,6 +5,7 @@
 //  Created by Anatoliy Podkladov on 01.06.2025.
 //
 
+import AVFoundation
 import SwiftUI
 
 struct InputView: View {
@@ -18,12 +19,18 @@ struct InputView: View {
 
     @State private var date: Date = Date()
     @State private var sugarString: String = ""
+    @State private var foodOrNotFoodTime: FoodOrNotFoodTime = .empty // FIXME: обновлять в зависимости от времени
     @State private var selectedInsulinType: InsulinType = .novorapid
+    @State private var reminder: Reminder = .afterOneHour
     @State private var insulinUnitsString: String = "7"
     @State private var foodDescription: String = ""
-    @State private var breadUnitsString: String = "1.0"
+    @State private var breadUnitsString: String = "0"
 
     @FocusState private var focusedField: FocusableField?
+    
+    @State private var selectedImage: UIImage?
+    @State private var showingImagePicker = false
+    @State private var showingCameraPermissionAlert = false
     
     private var isFoodEntered: Bool {
         !foodDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -38,68 +45,319 @@ struct InputView: View {
     // MARK: - Lifecycle
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Header
-            headerView
-                .accessibilityIdentifier("InputViewTitle")
+        ScrollView {
             
-            // Date and Time Row
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
+                // Header
+                headerView
+                    .padding(.top, 20)
+                    .accessibilityIdentifier("InputViewTitle")
+                
+                // Date and Time Row
+                dateAndTimeView
+                .frame(maxWidth: .infinity)
+                
+                
                 simpleFieldView(
-                    icon: "calendar",
-                    title: "Дата",
+                    title: "",
                     content: {
-                        ZStack {
+                        Picker("Прием пиши или нет?", selection: $foodOrNotFoodTime) {
+                            ForEach(FoodOrNotFoodTime.allCases) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                )
+                .accessibilityIdentifier("FoorOrNotFoodTimePicker")
+                
+                // Sugar Level
+                sugarLevelView
+                .accessibilityIdentifier("SugarInputView")
+                
+                foodView
+                
+                // Insulin Row
+                HStack(spacing: 12) {
+                    
+                    let insulinWidth = UIScreen.main.bounds.width - 40 - 12 - 120
+                    // let insulinWidth = (UIScreen.main.bounds.width - 40 - 12) / 3 * 2
+                    // let insulinValueWidth = (UIScreen.main.bounds.width - 40 - 12) / 3
+                    
+                    simpleFieldView(
+                        title: "",
+                        width: insulinWidth,
+                        content: {
+                            Picker("Тип инсулина", selection: $selectedInsulinType) {
+                                ForEach(InsulinType.allCases) { type in
+                                    Text(type.rawValue).tag(type)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .font(.body)
+                        }
+                    )
+                    
+                    if selectedInsulinType != .none {
+                        simpleFieldView(
+                            title: "",
+                            // width: insulinValueWidth,
+                            horizontalPadding: 8,
+                            content: {
+                                HStack(spacing: 0) {
+                                    TextField("0", text: $insulinUnitsString)
+                                        .keyboardType(.numberPad)
+                                        .focused($focusedField, equals: .insulinUnits)
+                                        .font(.body)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.trailing, 8)
+//                                        .frame(width: 60)
+                                    
+                                    // Spacer()
+                                    
+                                    Stepper(
+                                        "",
+                                        value: Binding(
+                                            get: { Int(insulinUnitsString) ?? 7 },
+                                            set: { insulinUnitsString = String($0) }
+                                        ),
+                                        in: 1...20
+                                    )
+                                    .labelsHidden()
+                                }
+                                .frame(width: 110)
+                            }
+                        )
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                }
+                .accessibilityIdentifier("InsulinRow")
+                
+                if isFoodEntered || breadUnitsString != "0" {
+                    // Reminder (if needed)
+                    simpleFieldView(
+                        icon: "iconBell",
+                        title: "",
+                        elementPadding: 0,
+                        content: {
+                            HStack {
+                                //                                if reminder == nil {
+                                //                                    Button
+                                //                                    Text("Напоминание")
+                                //                                        .foregroundColor(.secondary)
+                                //                                        .font(.body)
+                                //                                } else {
+                                Picker("Напоминание", selection: $reminder) {
+                                    ForEach(Reminder.allCases) { type in
+                                        Text(type.rawValue).tag(type)
+                                    }
+                                }
+                                // .pickerStyle(.menu)
+                                .font(.body)
+                                //                                }
+                                
+                                Spacer()
+                            }
+                        }
+                    )
+                }
+                
+                Spacer()
+                
+                // Simple Add Button
+                simpleAddButton
+                    .accessibilityIdentifier("AddRecordButton")
+            }
+        }
+        .padding(.horizontal, 20)        // .padding(.top, 20)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("InputView")
+        .animation(.easeInOut(duration: 0.3), value: foodDescription.isEmpty)
+        .animation(.easeInOut(duration: 0.3), value: selectedInsulinType)
+        .onChange(of: selectedInsulinType) { newValue in
+            if newValue == .none {
+                insulinUnitsString = "0"
+            } else if insulinUnitsString == "0" || insulinUnitsString.isEmpty {
+                 insulinUnitsString = "7"
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .keyboard) {
+                HStack {
+                    Spacer()
+                    Button("Готово") {
+                        focusedField = nil
+                    }
+                    .font(.body.weight(.medium))
+                    .foregroundColor(.accentColor)
+                    .accessibilityIdentifier("KeyboardDoneButton")
+                }
+            }
+        }
+        .background(Color(.systemBackground).ignoresSafeArea())
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(selectedImage: $selectedImage, sourceType: .camera)
+        }
+        .alert("Доступ к камере", isPresented: $showingCameraPermissionAlert) {
+            Button("Настройки") {
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            Text("Для добавления фото еды необходимо разрешить доступ к камере в настройках приложения.")
+        }
+
+    }
+    
+    // MARK: - Camera Functions
+    
+    private func openCamera() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            showingImagePicker = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        showingImagePicker = true
+                    } else {
+                        showingCameraPermissionAlert = true
+                    }
+                }
+            }
+        case .denied, .restricted:
+            showingCameraPermissionAlert = true
+        @unknown default:
+            showingCameraPermissionAlert = true
+        }
+    }
+    
+    // MARK: - Captured Image View
+    
+    private func capturedImageView(image: UIImage) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Фото еды")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Button("Удалить") {
+                    selectedImage = nil
+                }
+                .font(.caption)
+                .foregroundColor(.red)
+            }
+            
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.textFieldBorder, lineWidth: 1)
+                )
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+    
+    // MARK: - Header View
+    
+    private var headerView: some View {
+        Text("Новая запись")
+            .font(.title2.bold())
+            .foregroundColor(.primary)
+            // .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var dateAndTimeView: some View {
+        
+        HStack(spacing: 12) {
+            
+            let width = (UIScreen.main.bounds.width - 40 - 12) / 2
+            
+            simpleFieldView(
+                icon: "iconCalendar",
+                title: "Дата",
+                width: width,
+                content: {
+                    ZStack {
+                        HStack {
                             Text(date.stringDate)
                                 .font(.body)
                             
-                            DatePicker("Дата", selection: $date, displayedComponents: .date)
-                                .datePickerStyle(.compact)
-                                .colorMultiply(.clear)
-                                .labelsHidden()
+                            Spacer()
                         }
+                        
+                        DatePicker("", selection: $date, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .colorMultiply(.clear)
+                            .labelsHidden()
                     }
-                )
-                .accessibilityIdentifier("DatePicker")
-                
-                simpleFieldView(
-                    icon: "clock",
-                    title: "Время",
-                    content: {
-                        ZStack {
-                            Text(date.stringTime)
-                                .font(.body)
-                            
-                            DatePicker("Время", selection: $date, displayedComponents: .hourAndMinute)
-                                .datePickerStyle(.compact)
-                                .colorMultiply(.clear)
-                                .labelsHidden()
-                        }
-                    }
-                )
-                .accessibilityIdentifier("TimePicker")
-            }
-            
-            // Sugar Level
-            simpleFieldView(
-                icon: "drop",
-                title: "Сахар (ммоль/л)",
-                content: {
-                    TextField("Например: 5.2", text: $sugarString)
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .sugar)
-                        .font(.body)
-                        .accessibilityIdentifier("SugarInputField")
                 }
             )
-            .accessibilityIdentifier("SugarInputView")
+            .accessibilityIdentifier("DatePicker")
+            
+            simpleFieldView(
+                icon: "iconTimer",
+                title: "Время",
+                width: width,
+                content: {
+                    ZStack {
+                        HStack {
+                            Text(date.stringTime)
+                                .font(.body)
+                            Spacer()
+                        }
+                        
+                        DatePicker("Время", selection: $date, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.compact)
+                            .colorMultiply(.clear)
+                            .labelsHidden()
+                    }
+                }
+            )
+            .accessibilityIdentifier("TimePicker")
+        }
+    }
+    
+    private var sugarLevelView: some View {
+        
+        simpleFieldView(
+            icon: "iconBlood",
+            title: "",
+            content: {
+                TextField("Сахар (ммоль/л)", text: $sugarString)
+                    .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: .sugar)
+                    .font(.body)
+                    .accessibilityIdentifier("SugarInputField")
+            }
+        )
+    }
+    
+    private var foodView: some View {
+        Group {
             
             // Meal Type (if needed)
             simpleFieldView(
-                icon: "fork.knife",
-                title: "Что было в меню",
+                iconPosition: .trailing,
+                icon: "iconCamera",
+                iconSize: 24,
+                iconBacgroundSize: 34,
+                iconButtonAction: openCamera,
+//                    {
+//                    print("Camera button tapped")
+//                },
+                title: "",
                 content: {
-                    TextField("Описание еды", text: $foodDescription)
+                    TextField("Что было в меню", text: $foodDescription)
                         .focused($focusedField, equals: .food)
                         .font(.body)
                         .accessibilityIdentifier("FoodDescriptionField")
@@ -110,7 +368,6 @@ struct InputView: View {
             // Bread Units (only if food entered)
             if isFoodEntered {
                 simpleFieldView(
-                    icon: "square.grid.3x3",
                     title: "ХЕ",
                     content: {
                         HStack {
@@ -139,139 +396,72 @@ struct InputView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .accessibilityIdentifier("BreadUnitsView")
             }
-            
-            // Insulin Row
-            HStack(spacing: 12) {
-                simpleFieldView(
-                    icon: "syringe",
-                    title: "Инсулин",
-                    content: {
-                        Picker("Тип инсулина", selection: $selectedInsulinType) {
-                            ForEach(InsulinType.allCases) { type in
-                                Text(type.rawValue).tag(type)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .font(.body)
-                    }
-                )
-                
-                if selectedInsulinType != .none {
-                    simpleFieldView(
-                        icon: "",
-                        title: "",
-                        content: {
-                            HStack {
-                                TextField("0", text: $insulinUnitsString)
-                                    .keyboardType(.numberPad)
-                                    .focused($focusedField, equals: .insulinUnits)
-                                    .font(.body)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 60)
-                                
-                                Spacer()
-                                
-                                Stepper(
-                                    "",
-                                    value: Binding(
-                                        get: { Int(insulinUnitsString) ?? 7 },
-                                        set: { insulinUnitsString = String($0) }
-                                    ),
-                                    in: 1...100
-                                )
-                                .labelsHidden()
-                            }
-                        }
-                    )
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                }
-            }
-            .accessibilityIdentifier("InsulinRow")
-            
-            // Reminder (if needed)
-            simpleFieldView(
-                icon: "bell",
-                title: "Напоминание",
-                content: {
-                    Text("Настроить позже")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                }
-            )
-            
-            Spacer()
-            
-            // Simple Add Button
-            simpleAddButton
-                .accessibilityIdentifier("AddRecordButton")
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("InputView")
-        .background(Color(.systemBackground))
-        .animation(.easeInOut(duration: 0.3), value: foodDescription.isEmpty)
-        .animation(.easeInOut(duration: 0.3), value: selectedInsulinType)
-        .onChange(of: selectedInsulinType) { newValue in
-            if newValue == .none {
-                insulinUnitsString = "0"
-            } else if insulinUnitsString == "0" || insulinUnitsString.isEmpty {
-                 insulinUnitsString = "7"
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .keyboard) {
-                HStack {
-                    Spacer()
-                    Button("Готово") {
-                        focusedField = nil
-                    }
-                    .font(.body.weight(.medium))
-                    .foregroundColor(.accentColor)
-                    .accessibilityIdentifier("KeyboardDoneButton")
-                }
-            }
-        }
-    }
-    
-    // MARK: - Header View
-    
-    private var headerView: some View {
-        Text("Новая запись")
-            .font(.title2.bold())
-            .foregroundColor(.primary)
-            .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     // MARK: - Simple Field View
     
+    enum IconPosition {
+        case leading, trailing
+    }
+    
     @ViewBuilder
     private func simpleFieldView<Content: View>(
-        icon: String,
+        iconPosition: IconPosition = .leading,
+        icon: String? = nil,
+        iconSize: CGFloat = 14,
+        iconBacgroundSize: CGFloat = 28,
+        iconButtonAction: @escaping () -> Void = {},
         title: String,
+        width: CGFloat? = nil,
+        elementPadding: CGFloat = 11,
+        horizontalPadding: CGFloat = 11,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        HStack(spacing: 12) {
-            if !icon.isEmpty {
-                Image(systemName: icon)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .frame(width: 20, height: 20)
+        HStack(spacing: elementPadding) {
+            if let icon, !icon.isEmpty, iconPosition == .leading {
+                Image(icon)
+                    .resizable()
+                    .renderingMode(.template)
+                    .foregroundColor(.black)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: iconSize, height: iconSize)
+                    .frame(width: iconBacgroundSize, height: iconBacgroundSize)
+                    .background(Color.iconBacknground)
+                    .cornerRadius(10)
             }
             
-            if !title.isEmpty {
-                Text(title)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .frame(minWidth: 60, alignment: .leading)
-            }
+            //            if !title.isEmpty {
+            //                Text(title)
+            //                    .font(.body)
+            //                    .foregroundColor(.secondary)
+            //                    .frame(minWidth: 60, alignment: .leading)
+            //            }
             
             content()
+            
+            if let icon, !icon.isEmpty, iconPosition == .trailing {
+                Button(action: iconButtonAction) {
+                    Image(icon)
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(.black)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: iconSize, height: iconSize)
+                        .frame(width: iconBacgroundSize, height: iconBacgroundSize)
+                        .background(Color.iconBacknground)
+                        .cornerRadius(10)
+                }
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .padding(.horizontal, horizontalPadding)
+        .frame(width: width ?? .infinity, alignment: .leading)
+        .frame(height: 50)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .inset(by: 0.5)
+                .stroke(Color.textFieldBorder, lineWidth: 1)
+        )
     }
     
     // MARK: - Simple Add Button
